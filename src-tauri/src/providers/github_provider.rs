@@ -34,7 +34,7 @@ impl GitProvider for GitHubProvider {
         }
 
         if !response.status().is_success() {
-            return Err(AppError::Unknown("HTTP error".to_string()));
+            return Err(AppError::Unknown(format!("HTTP error status: {}", response.status())));
         }
 
         let repos: Vec<Repo> = response.json().await?;
@@ -43,7 +43,20 @@ impl GitProvider for GitHubProvider {
 
     async fn get_repo_detail(&self, owner: String, repo: String) -> Result<RepoDetail, AppError> {
         let client = build_client();
-        let url = format!("{}/repos/{}/{}", GITHUB_API_BASE, owner, repo);
+        // If repo is empty, owner contains "owner/repo" format
+        let (owner_str, repo_str) = if repo.is_empty() {
+            let parts: Vec<&str> = owner.split('/').collect();
+            if parts.len() >= 2 {
+                (parts[0].to_string(), parts[1].to_string())
+            } else {
+                (owner.clone(), String::new())
+            }
+        } else {
+            (owner, repo)
+        };
+        let url = format!("{}/repos/{}/{}", GITHUB_API_BASE, owner_str, repo_str);
+        eprintln!("GitHub API URL: {}", url);
+
         let response = client
             .get(&url)
             .bearer_auth(&self.token)
@@ -52,12 +65,14 @@ impl GitProvider for GitHubProvider {
             .send()
             .await?;
 
+        eprintln!("GitHub response status: {}", response.status());
+
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {
             return Err(AppError::Unauthorized);
         }
 
         if !response.status().is_success() {
-            return Err(AppError::Unknown("HTTP error".to_string()));
+            return Err(AppError::Unknown(format!("HTTP error status: {}", response.status())));
         }
 
         let repo_detail: RepoDetail = response.json().await?;
@@ -66,7 +81,20 @@ impl GitProvider for GitHubProvider {
 
     async fn get_commits(&self, owner: String, repo: String) -> Result<Vec<CommitSummary>, AppError> {
         let client = build_client();
-        let url = format!("{}/repos/{}/{}/commits?per_page=100", GITHUB_API_BASE, owner, repo);
+        // If repo is empty, owner contains "owner/repo" format
+        let (owner_str, repo_str) = if repo.is_empty() {
+            let parts: Vec<&str> = owner.split('/').collect();
+            if parts.len() >= 2 {
+                (parts[0].to_string(), parts[1].to_string())
+            } else {
+                (owner.clone(), String::new())
+            }
+        } else {
+            (owner, repo)
+        };
+        let url = format!("{}/repos/{}/{}/commits?per_page=100", GITHUB_API_BASE, owner_str, repo_str);
+        eprintln!("GitHub API URL: {}", url);
+
         let response = client
             .get(&url)
             .bearer_auth(&self.token)
@@ -75,12 +103,14 @@ impl GitProvider for GitHubProvider {
             .send()
             .await?;
 
+        eprintln!("GitHub response status: {}", response.status());
+
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {
             return Err(AppError::Unauthorized);
         }
 
         if !response.status().is_success() {
-            return Err(AppError::Unknown("HTTP error".to_string()));
+            return Err(AppError::Unknown(format!("HTTP error status: {}", response.status())));
         }
 
         let commits: Vec<CommitSummary> = response.json().await?;
@@ -89,7 +119,20 @@ impl GitProvider for GitHubProvider {
 
     async fn get_commit_detail(&self, owner: String, repo: String, sha: String) -> Result<CommitDetail, AppError> {
         let client = build_client();
-        let url = format!("{}/repos/{}/{}/commits/{}", GITHUB_API_BASE, owner, repo, sha);
+        // If repo is empty, owner contains "owner/repo" format
+        let (owner_str, repo_str) = if repo.is_empty() {
+            let parts: Vec<&str> = owner.split('/').collect();
+            if parts.len() >= 2 {
+                (parts[0].to_string(), parts[1].to_string())
+            } else {
+                (owner.clone(), String::new())
+            }
+        } else {
+            (owner, repo)
+        };
+        let url = format!("{}/repos/{}/{}/commits/{}", GITHUB_API_BASE, owner_str, repo_str, sha);
+        eprintln!("GitHub API URL: {}", url);
+
         let response = client
             .get(&url)
             .bearer_auth(&self.token)
@@ -98,12 +141,14 @@ impl GitProvider for GitHubProvider {
             .send()
             .await?;
 
+        eprintln!("GitHub response status: {}", response.status());
+
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {
             return Err(AppError::Unauthorized);
         }
 
         if !response.status().is_success() {
-            return Err(AppError::Unknown("HTTP error".to_string()));
+            return Err(AppError::Unknown(format!("HTTP error status: {}", response.status())));
         }
 
         let commit_detail: CommitDetail = response.json().await?;

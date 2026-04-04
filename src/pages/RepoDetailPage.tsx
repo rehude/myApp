@@ -20,8 +20,9 @@ function RepoDetailPage() {
     if (!id) return;
     setLoading(true);
     setError("");
-    // For GitLab, id is the project ID; for GitHub, id is owner/repo format
-    const response = await getRepoDetail("", id);
+    // id is URL-encoded full_name (owner/repo for GitHub, path_with_namespace for GitLab)
+    const decodedId = decodeURIComponent(id);
+    const response = await getRepoDetail(decodedId, "");
     setLoading(false);
     if (response.success && response.data) {
       setDetail(response.data);
@@ -47,7 +48,7 @@ function RepoDetailPage() {
           {detail.language && <span>📝 {detail.language}</span>}
         </div>
         <div className="actions">
-          <button onClick={() => navigate(`/repo/${id}/commits`)} className="btn-primary">
+          <button onClick={() => navigate(`/repo/${encodeURIComponent(detail.full_name)}/commits`)} className="btn-primary">
             View Commits
           </button>
           <a href={detail.html_url} target="_blank" rel="noopener noreferrer" className="btn-secondary">

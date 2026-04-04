@@ -28,8 +28,8 @@ function RepoListPage() {
 
   const handleRepoClick = (repo: Repo) => {
     setSelectedRepo(repo);
-    // Use repo.id as the identifier for API calls
-    navigate(`/repo/${repo.id}`);
+    // Navigate to commits page - the repo is stored in state
+    navigate(`/repo/${repo.id}/commits`);
   };
 
   if (loading) return <div className="loading">Loading repositories...</div>;

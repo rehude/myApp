@@ -1,32 +1,51 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCommitDetail } from "../api/tauri";
+import { useAppStore } from "../store/useAppStore";
 import { CommitDetail } from "../types";
 
 function CommitDetailPage() {
-  const { id, sha } = useParams<{ id: string; sha: string }>();
+  const { sha } = useParams<{ sha: string }>();
   const [detail, setDetail] = useState<CommitDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { provider, selectedRepoFullName, selectedRepoId } = useAppStore();
 
   useEffect(() => {
-    if (id && sha) {
+    if (sha) {
       loadDetail();
     }
-  }, [id, sha]);
+  }, [sha]);
 
   const loadDetail = async () => {
-    if (!id || !sha) return;
+    if (!sha) return;
+    if (!selectedRepoFullName && !selectedRepoId) {
+      setError("No repository selected");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError("");
-    // For GitLab, id is the project ID; for GitHub, id is owner/repo format
-    const response = await getCommitDetail("", id, sha);
-    setLoading(false);
-    if (response.success && response.data) {
-      setDetail(response.data);
-    } else {
-      setError(response.error || "Failed to load commit details");
+
+    try {
+      let response;
+      if (provider === "github") {
+        response = await getCommitDetail(selectedRepoFullName!, "", sha);
+      } else {
+        response = await getCommitDetail("", String(selectedRepoId), sha);
+      }
+
+      setLoading(false);
+      if (response.success && response.data) {
+        setDetail(response.data);
+      } else {
+        setError(response.error || "Failed to load commit");
+      }
+    } catch (e) {
+      setLoading(false);
+      setError(String(e));
     }
   };
 
@@ -35,13 +54,17 @@ function CommitDetailPage() {
     return new Date(dateStr).toLocaleString();
   };
 
+  const handleBack = () => {
+    navigate(-1);
+  };
+
   if (loading) return <div className="loading">Loading commit...</div>;
   if (error) return <div className="error-container">{error}</div>;
   if (!detail) return null;
 
   return (
     <div className="page">
-      <button onClick={() => navigate(`/repo/${id}/commits`)} className="btn-back">
+      <button onClick={handleBack} className="btn-back">
         ← Back to Commits
       </button>
       <div className="commit-detail">
