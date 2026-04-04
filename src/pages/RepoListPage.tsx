@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getRepos } from "../api/tauri";
-import { useAppStore } from "../store/useAppStore";
+import { getRepos, logout as apiLogout, setProvider as apiSetProvider } from "../api/tauri";
+import { useAppStore, Provider } from "../store/useAppStore";
 import { Repo } from "../types";
 
 function RepoListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { repos, setRepos, setSelectedRepo } = useAppStore();
+  const { repos, setRepos, setSelectedRepo, clearTokens, setProvider, provider } = useAppStore();
 
   useEffect(() => {
     loadRepos();
@@ -22,14 +22,32 @@ function RepoListPage() {
     if (response.success && response.data) {
       setRepos(response.data);
     } else {
-      setError(response.error || "Failed to load repositories");
+      if (response.code === "UNAUTHORIZED" || response.code === "NOT_LOGGED_IN") {
+        clearTokens();
+        navigate("/");
+      } else {
+        setError(response.error || "Failed to load repositories");
+      }
     }
   };
 
   const handleRepoClick = (repo: Repo) => {
     setSelectedRepo(repo);
-    // Navigate to commits page - the repo is stored in state
     navigate(`/repo/${repo.id}/commits`);
+  };
+
+  const handleLogout = async () => {
+    await apiLogout();
+    clearTokens();
+    navigate("/");
+  };
+
+  const handleSwitchProvider = async (newProvider: Provider) => {
+    const res = await apiSetProvider(newProvider);
+    if (res.success) {
+      setProvider(newProvider);
+      loadRepos();
+    }
   };
 
   if (loading) return <div className="loading">Loading repositories...</div>;
@@ -39,7 +57,18 @@ function RepoListPage() {
     <div className="page">
       <div className="header">
         <h1>Repositories</h1>
-        <button onClick={loadRepos} className="btn-secondary">Refresh</button>
+        <div className="header-actions">
+          <select
+            value={provider}
+            onChange={(e) => handleSwitchProvider(e.target.value as Provider)}
+            className="select-input"
+          >
+            <option value="github">GitHub</option>
+            <option value="gitlab">GitLab</option>
+          </select>
+          <button onClick={loadRepos} className="btn-secondary">Refresh</button>
+          <button onClick={handleLogout} className="btn-secondary">Logout</button>
+        </div>
       </div>
       <div className="repo-list">
         {repos.map((repo) => (

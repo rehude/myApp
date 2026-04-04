@@ -11,6 +11,7 @@ pub fn set_token(state: &AppState, token: String, provider: Provider) {
             *guard = Some(token);
         }
     }
+    state.save_auth();
 }
 
 pub fn get_token(state: &AppState, provider: Provider) -> Option<String> {
@@ -29,6 +30,8 @@ pub fn get_token(state: &AppState, provider: Provider) -> Option<String> {
 pub fn set_provider(state: &AppState, provider: Provider) {
     let mut guard = state.provider.lock().unwrap();
     *guard = provider;
+    drop(guard);
+    state.save_auth();
 }
 
 pub fn get_provider(state: &AppState) -> Provider {
@@ -39,9 +42,23 @@ pub fn get_provider(state: &AppState) -> Provider {
 pub fn set_gitlab_url(state: &AppState, url: String) {
     let mut guard = state.gitlab_url.lock().unwrap();
     *guard = url;
+    drop(guard);
+    state.save_auth();
 }
 
 pub fn get_gitlab_url(state: &AppState) -> String {
     let guard = state.gitlab_url.lock().unwrap();
     guard.clone()
+}
+
+pub fn clear_tokens(state: &AppState) {
+    {
+        let mut guard = state.github_token.lock().unwrap();
+        *guard = None;
+    }
+    {
+        let mut guard = state.gitlab_token.lock().unwrap();
+        *guard = None;
+    }
+    state.save_auth();
 }

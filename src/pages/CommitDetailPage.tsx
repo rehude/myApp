@@ -10,7 +10,7 @@ function CommitDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { provider, selectedRepoFullName, selectedRepoId } = useAppStore();
+  const { provider, selectedRepoFullName, selectedRepoId, clearTokens } = useAppStore();
 
   useEffect(() => {
     if (sha) {
@@ -41,7 +41,12 @@ function CommitDetailPage() {
       if (response.success && response.data) {
         setDetail(response.data);
       } else {
-        setError(response.error || "Failed to load commit");
+        if (response.code === "UNAUTHORIZED" || response.code === "NOT_LOGGED_IN") {
+          clearTokens();
+          navigate("/");
+        } else {
+          setError(response.error || "Failed to load commit");
+        }
       }
     } catch (e) {
       setLoading(false);

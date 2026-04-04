@@ -10,13 +10,10 @@ function CommitListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { provider, selectedRepoFullName, selectedRepoId, clearSelectedRepo } = useAppStore();
+  const { provider, selectedRepoFullName, selectedRepoId, clearSelectedRepo, clearTokens } = useAppStore();
 
   useEffect(() => {
     loadData();
-    return () => {
-      // Clear selected repo when leaving
-    };
   }, []);
 
   const loadData = async () => {
@@ -42,7 +39,12 @@ function CommitListPage() {
       if (repoResponse.success && repoResponse.data) {
         setRepoDetail(repoResponse.data);
       } else {
-        setError(repoResponse.error || "Failed to load repository");
+        if (repoResponse.code === "UNAUTHORIZED" || repoResponse.code === "NOT_LOGGED_IN") {
+          clearTokens();
+          navigate("/");
+        } else {
+          setError(repoResponse.error || "Failed to load repository");
+        }
         setLoading(false);
         return;
       }
@@ -59,7 +61,12 @@ function CommitListPage() {
       if (commitsResponse.success && commitsResponse.data) {
         setCommits(commitsResponse.data);
       } else {
-        setError(commitsResponse.error || "Failed to load commits");
+        if (commitsResponse.code === "UNAUTHORIZED" || commitsResponse.code === "NOT_LOGGED_IN") {
+          clearTokens();
+          navigate("/");
+        } else {
+          setError(commitsResponse.error || "Failed to load commits");
+        }
       }
     } catch (e) {
       setLoading(false);
