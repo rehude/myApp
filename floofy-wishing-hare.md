@@ -1,224 +1,137 @@
-# 开发任务分解计划
+# Git Repo Viewer - 开发任务分解计划
 
-## Context
+## 项目概述
 
-产品文档定义了一个 Tauri 桌面应用，用于查看 GitHub 仓库和提交记录（只读）。当前项目为空，需要从零开始搭建完整技术栈。
-
----
-
-## 阶段一：项目初始化
-
-### 1.1 创建 Tauri + React 项目
-
-- [ ] 初始化 Tauri 项目 `npm create tauri-app@latest`
-- [ ] 选择 React + TypeScript 模板
-- [ ] 安装前端依赖（zustand, react-router-dom）
-
-### 1.2 配置 Rust 依赖
-
-- [ ] 在 `src-tauri/Cargo.toml` 添加依赖：
-  ```toml
-  tauri = { version = "1", features = ["api-all"] }
-  reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
-  serde = { version = "1", features = ["derive"] }
-  serde_json = "1"
-  tokio = { version = "1", features = ["full"] }
-  thiserror = "1"
-  ```
-
-### 1.3 验证项目结构
-
-- [ ] 确认 `src-tauri/src` 目录结构
-- [ ] 确认前端 `src` 目录结构
-- [ ] 运行 `cargo build` 和 `npm run dev` 验证能启动
+Tauri 桌面应用，支持 GitHub 和 GitLab 仓库查看（只读）
 
 ---
 
-## 阶段二：Rust 后端核心
+## 当前状态
 
-### 2.1 状态管理
-
-- [ ] 创建 `src-tauri/src/state.rs`
-  ```rust
-  pub struct AppState {
-      pub github_token: Option<String>,
-  }
-  ```
-
-### 2.2 错误定义
-
-- [ ] 创建 `src-tauri/src/error.rs`
-  ```rust
-  #[derive(thiserror::Error, Debug)]
-  pub enum AppError {
-      #[error("Network error")]
-      Network,
-      #[error("Unauthorized")]
-      Unauthorized,
-      #[error("Not logged in")]
-      NotLoggedIn,
-      #[error("Unknown error")]
-      Unknown,
-  }
-  ```
-
-### 2.3 数据模型
-
-- [ ] 创建 `src-tauri/src/models/repo.rs` - Repo 结构体
-- [ ] 创建 `src-tauri/src/models/commit.rs` - Commit 结构体
-- [ ] 创建 `src-tauri/src/models/mod.rs` - 模块导出
-
-### 2.4 HTTP Client
-
-- [ ] 创建 `src-tauri/src/clients/http_client.rs`
-  ```rust
-  fn build_client(token: &str) -> reqwest::Client
-  ```
-
-### 2.5 GitHub Client
-
-- [ ] 创建 `src-tauri/src/clients/github_client.rs`
-  - `get_repos(client, token) -> Vec<Repo>`
-  - `get_repo_detail(client, token, owner, repo) -> RepoDetail`
-  - `get_commits(client, token, owner, repo) -> Vec<CommitSummary>`
-  - `get_commit_detail(client, token, owner, repo, sha) -> CommitDetail>`
-
-### 2.6 Services（业务逻辑）
-
-- [ ] 创建 `src-tauri/src/services/auth_service.rs` - token 管理
-- [ ] 创建 `src-tauri/src/services/repo_service.rs` - 仓库业务逻辑
-- [ ] 创建 `src-tauri/src/services/commit_service.rs` - 提交业务逻辑
-- [ ] 创建 `src-tauri/src/services/mod.rs` - 模块导出
-
-### 2.7 Tauri Commands（API 入口）
-
-- [ ] 创建 `src-tauri/src/commands/mod.rs` - 模块导出
-- [ ] 实现 `set_token(state, token) -> ApiResponse<()>`
-- [ ] 实现 `get_repos(state) -> ApiResponse<Vec<Repo>>`
-- [ ] 实现 `get_repo_detail(state, owner, repo) -> ApiResponse<RepoDetail>`
-- [ ] 实现 `get_commits(state, owner, repo) -> ApiResponse<Vec<CommitSummary>>`
-- [ ] 实现 `get_commit_detail(state, owner, repo, sha) -> ApiResponse<CommitDetail>>`
-
-### 2.8 主入口配置
-
-- [ ] 在 `src-tauri/src/lib.rs` 注册所有 commands
-- [ ] 配置 `AppState` 和 `make_app`
+✅ GitHub + GitLab 双平台支持
+✅ 仓库列表、详情、提交列表、commit diff 均已实现
 
 ---
 
-## 阶段三：React 前端
-
-### 3.1 页面组件
-
-- [ ] 创建 `src/pages/LoginPage.tsx` - Token 输入页
-- [ ] 创建 `src/pages/RepoListPage.tsx` - 仓库列表页
-- [ ] 创建 `src/pages/RepoDetailPage.tsx` - 仓库详情页
-- [ ] 创建 `src/pages/CommitListPage.tsx` - 提交列表页
-- [ ] 创建 `src/pages/CommitDetailPage.tsx` - Commit 详情（含 diff）
-
-### 3.2 路由配置
-
-- [ ] 配置 React Router：
-  ```
-  /              → LoginPage
-  /repos         → RepoListPage
-  /repo/:owner/:repo → RepoDetailPage
-  /repo/:owner/:repo/commits → CommitListPage
-  /commit/:owner/:repo/:sha  → CommitDetailPage
-  ```
-
-### 3.3 状态管理 (Zustand)
-
-- [ ] 创建 `src/store/useAppStore.ts`
-  ```ts
-  {
-    token: string | null,
-    repos: Repo[],
-    selectedRepo: Repo | null,
-    setToken,
-    setRepos,
-    setSelectedRepo
-  }
-  ```
-
-### 3.4 API 调用封装
-
-- [ ] 创建 `src/api/tauri.ts` - invoke 封装
-- [ ] 统一错误处理和 ApiResponse 类型
-
-### 3.5 样式
-
-- [ ] 添加基础 CSS 样式（简洁即可）
-
----
-
-## 阶段四：联调与测试
-
-### 4.1 完整流程测试
-
-- [ ] 输入 Token 登录
-- [ ] 获取并显示仓库列表
-- [ ] 点击仓库查看详情
-- [ ] 查看提交列表
-- [ ] 查看单个 commit 的 diff
-
-### 4.2 错误处理测试
-
-- [ ] 未登录时访问其他页面
-- [ ] API 请求失败提示
-
----
-
-## 关键文件路径
+## 项目结构
 
 ```
 src-tauri/
-├── Cargo.toml
 ├── src/
-│   ├── lib.rs              # 主入口，注册 commands
-│   ├── main.rs             # 程序入口
-│   ├── state.rs            # AppState
-│   ├── error.rs            # AppError
-│   ├── models/
-│   │   ├── mod.rs
-│   │   ├── repo.rs
-│   │   └── commit.rs
-│   ├── clients/
-│   │   ├── mod.rs
-│   │   ├── http_client.rs
-│   │   └── github_client.rs
-│   ├── services/
-│   │   ├── mod.rs
-│   │   ├── auth_service.rs
-│   │   ├── repo_service.rs
-│   │   └── commit_service.rs
-│   └── commands/
-│       └── mod.rs          # 所有 tauri commands
+│   ├── main.rs              # 程序入口
+│   ├── lib.rs              # 模块入口，注册 commands
+│   ├── state.rs            # AppState (Provider, tokens, gitlab_url)
+│   ├── error.rs            # AppError 定义
+│   ├── models/             # 数据模型
+│   │   ├── repo.rs         # Repo, RepoDetail, Owner
+│   │   └── commit.rs       # CommitSummary, CommitDetail, CommitFile
+│   ├── providers/          # 核心抽象层
+│   │   ├── provider_trait.rs   # GitProvider trait
+│   │   ├── github_provider.rs  # GitHub 实现
+│   │   └── gitlab_provider.rs # GitLab 实现
+│   ├── services/           # 业务逻辑
+│   │   ├── auth_service.rs    # token/provider 管理
+│   │   ├── repo_service.rs    # 仓库业务
+│   │   └── commit_service.rs   # 提交业务
+│   └── commands/           # Tauri commands
+│       └── mod.rs          # set_provider, set_github_token, set_gitlab_token, set_gitlab_url, get_repos, get_repo_detail, get_commits, get_commit_detail
+└── tauri.conf.json
 
-src/
-├── App.tsx
+src/                       # React 前端
+├── App.tsx                # 路由配置
 ├── main.tsx
 ├── pages/
-│   ├── LoginPage.tsx
-│   ├── RepoListPage.tsx
-│   ├── RepoDetailPage.tsx
-│   ├── CommitListPage.tsx
-│   └── CommitDetailPage.tsx
+│   ├── LoginPage.tsx      # 登录页，支持选择 GitHub/GitLab，输入 URL 和 Token
+│   ├── RepoListPage.tsx   # 仓库列表
+│   ├── CommitListPage.tsx # 提交列表（包含 repo 详情）
+│   └── CommitDetailPage.tsx # Commit 详情，包含 diff
 ├── store/
-│   └── useAppStore.ts
-├── api/
-│   └── tauri.ts
-└── types/
-    └── index.ts
+│   └── useAppStore.ts     # Zustand store
+└── api/
+    └── tauri.ts          # Tauri invoke 封装
+
+Cargo.toml 依赖:
+- tauri = { version = "1", features = ["shell-open"] }
+- reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
+- serde = { version = "1", features = ["derive"] }
+- serde_json = "1"
+- tokio = { version = "1", features = ["full"] }
+- thiserror = "1"
+- async-trait = "0.1"
+- percent-encoding = "2"
 ```
 
 ---
 
-## 验证标准
+## 架构设计
 
-运行 `npm run tauri dev` 后：
-1. 能看到登录页面
-2. 输入 GitHub Token 后能显示仓库列表
-3. 点击仓库能看到详情
-4. 能看到提交列表
-5. 点击提交能看到 diff 内容
+```
+        UI (React)
+           ↓
+    commands (Tauri invoke)
+           ↓
+     services (业务逻辑)
+           ↓
+   GitProvider Trait (抽象层)
+      ↓           ↓
+GitHubProvider  GitLabProvider
+```
+
+---
+
+## 关键实现细节
+
+### Provider 抽象
+
+```rust
+#[async_trait]
+pub trait GitProvider {
+    async fn get_repos(&self) -> Result<Vec<Repo>, AppError>;
+    async fn get_repo_detail(&self, owner: String, repo: String) -> Result<RepoDetail, AppError>;
+    async fn get_commits(&self, owner: String, repo: String) -> Result<Vec<CommitSummary>, AppError>;
+    async fn get_commit_detail(&self, owner: String, repo: String, sha: String) -> Result<CommitDetail, AppError>;
+}
+```
+
+### GitHub API 格式
+- `owner/repo` 格式
+- Bearer token 认证
+
+### GitLab API 格式
+- Numeric project ID
+- `PRIVATE-TOKEN` header 认证
+- 单独 endpoint 获取 diff: `/projects/{id}/repository/commits/{sha}/diff`
+
+### GitLab URL 支持
+- 支持私有 GitLab 实例（如 `https://gitlab.51tyty.com`）
+- Token 需要 `read_api` 权限
+
+---
+
+## 运行命令
+
+```bash
+# 开发模式
+npm run tauri dev
+
+# 生产构建
+npm run tauri build
+```
+
+---
+
+## 待优化项（可选）
+
+1. 移除调试用的 `eprintln!` 日志
+2. 添加 loading 状态优化
+3. GitLab diff 添加 additions/deletions 统计
+4. 错误处理优化（区分 401/403/404/500 等）
+
+---
+
+## 最近修复记录
+
+1. GitLab commit diff 使用 `/repository/commits/{sha}/diff` endpoint（原本的 endpoint 不返回 diff）
+2. GitLab 使用 `visibility` 字段代替 `private`
+3. GitHub/GitLab 共存：通过 `full_name` (owner/repo) 传递给 GitHub，numeric ID 传递给 GitLab
+4. GitLab URL 编码 project ID（包含特殊字符时需要）
