@@ -28,7 +28,8 @@ function RepoListPage() {
 
   const handleRepoClick = (repo: Repo) => {
     setSelectedRepo(repo);
-    navigate(`/repo/${repo.owner.login}/${repo.name}`);
+    // Use repo.id as the identifier for API calls
+    navigate(`/repo/${repo.id}`);
   };
 
   if (loading) return <div className="loading">Loading repositories...</div>;

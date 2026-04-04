@@ -4,23 +4,24 @@ import { getCommits } from "../api/tauri";
 import { CommitSummary } from "../types";
 
 function CommitListPage() {
-  const { owner, repo } = useParams<{ owner: string; repo: string }>();
+  const { id } = useParams<{ id: string }>();
   const [commits, setCommits] = useState<CommitSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (owner && repo) {
+    if (id) {
       loadCommits();
     }
-  }, [owner, repo]);
+  }, [id]);
 
   const loadCommits = async () => {
-    if (!owner || !repo) return;
+    if (!id) return;
     setLoading(true);
     setError("");
-    const response = await getCommits(owner, repo);
+    // For GitLab, id is the project ID; for GitHub, id is owner/repo format
+    const response = await getCommits("", id);
     setLoading(false);
     if (response.success && response.data) {
       setCommits(response.data);
@@ -39,14 +40,14 @@ function CommitListPage() {
 
   return (
     <div className="page">
-      <button onClick={() => navigate(`/repo/${owner}/${repo}`)} className="btn-back">← Back</button>
-      <h1>Commits - {repo}</h1>
+      <button onClick={() => navigate(`/repo/${id}`)} className="btn-back">← Back</button>
+      <h1>Commits</h1>
       <div className="commit-list">
         {commits.map((commit) => (
           <div
             key={commit.sha}
             className="commit-card"
-            onClick={() => navigate(`/commit/${owner}/${repo}/${commit.sha}`)}
+            onClick={() => navigate(`/commit/${id}/${commit.sha}`)}
           >
             <div className="commit-sha">{commit.sha.slice(0, 7)}</div>
             <div className="commit-info">

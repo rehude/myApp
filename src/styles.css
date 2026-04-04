@@ -78,6 +78,33 @@ button {
   margin-bottom: 8px;
 }
 
+.provider-select {
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.provider-select label {
+  display: block;
+  margin-bottom: 4px;
+  color: #8b949e;
+  font-size: 14px;
+}
+
+.select-input {
+  width: 100%;
+  padding: 12px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #c9d1d9;
+  font-size: 14px;
+}
+
+.select-input:focus {
+  outline: none;
+  border-color: #58a6ff;
+}
+
 .subtitle {
   color: #8b949e;
   margin-bottom: 24px;

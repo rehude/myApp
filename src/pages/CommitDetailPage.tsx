@@ -4,23 +4,24 @@ import { getCommitDetail } from "../api/tauri";
 import { CommitDetail } from "../types";
 
 function CommitDetailPage() {
-  const { owner, repo, sha } = useParams<{ owner: string; repo: string; sha: string }>();
+  const { id, sha } = useParams<{ id: string; sha: string }>();
   const [detail, setDetail] = useState<CommitDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (owner && repo && sha) {
+    if (id && sha) {
       loadDetail();
     }
-  }, [owner, repo, sha]);
+  }, [id, sha]);
 
   const loadDetail = async () => {
-    if (!owner || !repo || !sha) return;
+    if (!id || !sha) return;
     setLoading(true);
     setError("");
-    const response = await getCommitDetail(owner, repo, sha);
+    // For GitLab, id is the project ID; for GitHub, id is owner/repo format
+    const response = await getCommitDetail("", id, sha);
     setLoading(false);
     if (response.success && response.data) {
       setDetail(response.data);
@@ -40,7 +41,7 @@ function CommitDetailPage() {
 
   return (
     <div className="page">
-      <button onClick={() => navigate(`/repo/${owner}/${repo}/commits`)} className="btn-back">
+      <button onClick={() => navigate(`/repo/${id}/commits`)} className="btn-back">
         ← Back to Commits
       </button>
       <div className="commit-detail">

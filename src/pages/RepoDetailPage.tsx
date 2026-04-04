@@ -4,23 +4,24 @@ import { getRepoDetail } from "../api/tauri";
 import { RepoDetail } from "../types";
 
 function RepoDetailPage() {
-  const { owner, repo } = useParams<{ owner: string; repo: string }>();
+  const { id } = useParams<{ id: string }>();
   const [detail, setDetail] = useState<RepoDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (owner && repo) {
+    if (id) {
       loadDetail();
     }
-  }, [owner, repo]);
+  }, [id]);
 
   const loadDetail = async () => {
-    if (!owner || !repo) return;
+    if (!id) return;
     setLoading(true);
     setError("");
-    const response = await getRepoDetail(owner, repo);
+    // For GitLab, id is the project ID; for GitHub, id is owner/repo format
+    const response = await getRepoDetail("", id);
     setLoading(false);
     if (response.success && response.data) {
       setDetail(response.data);
@@ -46,7 +47,7 @@ function RepoDetailPage() {
           {detail.language && <span>📝 {detail.language}</span>}
         </div>
         <div className="actions">
-          <button onClick={() => navigate(`/repo/${owner}/${repo}/commits`)} className="btn-primary">
+          <button onClick={() => navigate(`/repo/${id}/commits`)} className="btn-primary">
             View Commits
           </button>
           <a href={detail.html_url} target="_blank" rel="noopener noreferrer" className="btn-secondary">

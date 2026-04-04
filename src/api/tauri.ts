@@ -1,8 +1,35 @@
 import { invoke } from "@tauri-apps/api/tauri";
 
-export async function setToken(token: string): Promise<{ success: boolean; error?: string }> {
+export async function setProvider(provider: string): Promise<{ success: boolean; error?: string }> {
   try {
-    await invoke("set_token", { token });
+    await invoke("set_provider", { provider });
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: String(e) };
+  }
+}
+
+export async function setGithubToken(token: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await invoke("set_github_token", { token });
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: String(e) };
+  }
+}
+
+export async function setGitlabToken(token: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await invoke("set_gitlab_token", { token });
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: String(e) };
+  }
+}
+
+export async function setGitlabUrl(url: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await invoke("set_gitlab_url", { url });
     return { success: true };
   } catch (e) {
     return { success: false, error: String(e) };

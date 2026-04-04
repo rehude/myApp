@@ -1,4 +1,4 @@
-  import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import RepoListPage from "./pages/RepoListPage";
 import RepoDetailPage from "./pages/RepoDetailPage";
@@ -7,16 +7,17 @@ import CommitDetailPage from "./pages/CommitDetailPage";
 import { useAppStore } from "./store/useAppStore";
 
 function App() {
-  const token = useAppStore((state) => state.token);
+  const { provider, githubToken, gitlabToken } = useAppStore();
+  const isLoggedIn = provider === "github" ? githubToken !== null : gitlabToken !== null;
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={token ? <Navigate to="/repos" /> : <LoginPage />} />
-        <Route path="/repos" element={token ? <RepoListPage /> : <Navigate to="/" />} />
-        <Route path="/repo/:owner/:repo" element={token ? <RepoDetailPage /> : <Navigate to="/" />} />
-        <Route path="/repo/:owner/:repo/commits" element={token ? <CommitListPage /> : <Navigate to="/" />} />
-        <Route path="/commit/:owner/:repo/:sha" element={token ? <CommitDetailPage /> : <Navigate to="/" />} />
+        <Route path="/" element={isLoggedIn ? <Navigate to="/repos" /> : <LoginPage />} />
+        <Route path="/repos" element={isLoggedIn ? <RepoListPage /> : <Navigate to="/" />} />
+        <Route path="/repo/:id" element={isLoggedIn ? <RepoDetailPage /> : <Navigate to="/" />} />
+        <Route path="/repo/:id/commits" element={isLoggedIn ? <CommitListPage /> : <Navigate to="/" />} />
+        <Route path="/commit/:id/:sha" element={isLoggedIn ? <CommitDetailPage /> : <Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
   );
