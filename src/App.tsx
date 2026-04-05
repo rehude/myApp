@@ -7,46 +7,50 @@ import CommitDetailPage from "./pages/CommitDetailPage";
 import { useAppStore } from "./store/useAppStore";
 import { initApp } from "./api/tauri";
 
-function App() {
+function AppContent() {
   const [loading, setLoading] = useState(true);
-  const { provider, githubToken, gitlabToken, setProvider, setGithubToken, setGitlabToken } = useAppStore();
+  const { isLoggedIn, setProvider, setAccounts, setLoggedIn } = useAppStore();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const res = await initApp();
+        setAccounts(res.github_accounts, res.gitlab_accounts);
+
         if (res.logged_in) {
           setProvider(res.provider as "github" | "gitlab");
-          if (res.github_token_exists) {
-            setGithubToken("stored");
-          }
-          if (res.gitlab_token_exists) {
-            setGitlabToken("stored");
-          }
+          setLoggedIn(true);
+        } else {
+          setLoggedIn(false);
         }
       } catch (e) {
         console.error("Failed to init app:", e);
+        setLoggedIn(false);
       } finally {
         setLoading(false);
       }
     };
     checkAuth();
-  }, []);
+  }, []);  // 只在首次挂载时执行
 
   if (loading) {
     return <div className="loading">Loading...</div>;
   }
 
-  const isLoggedIn = provider === "github" ? githubToken !== null : gitlabToken !== null;
+  return (
+    <Routes>
+      <Route path="/" element={isLoggedIn ? <Navigate to="/repos" /> : <LoginPage />} />
+      <Route path="/repos" element={isLoggedIn ? <RepoListPage /> : <Navigate to="/" />} />
+      <Route path="/repo/:id/commits" element={isLoggedIn ? <CommitListPage /> : <Navigate to="/" />} />
+      <Route path="/commit/:sha" element={isLoggedIn ? <CommitDetailPage /> : <Navigate to="/" />} />
+    </Routes>
+  );
+}
 
+function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={isLoggedIn ? <Navigate to="/repos" /> : <LoginPage />} />
-        <Route path="/repos" element={isLoggedIn ? <RepoListPage /> : <Navigate to="/" />} />
-        <Route path="/repo/:id/commits" element={isLoggedIn ? <CommitListPage /> : <Navigate to="/" />} />
-        <Route path="/commit/:sha" element={isLoggedIn ? <CommitDetailPage /> : <Navigate to="/" />} />
-      </Routes>
+      <AppContent />
     </BrowserRouter>
   );
 }

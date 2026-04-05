@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCommits, getRepoDetail } from "../api/tauri";
+import { getCommits, getRepoDetail, logout as apiLogout } from "../api/tauri";
 import { useAppStore } from "../store/useAppStore";
 import { CommitSummary, RepoDetail } from "../types";
 
@@ -10,11 +10,15 @@ function CommitListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { provider, selectedRepoFullName, selectedRepoId, clearSelectedRepo, clearTokens } = useAppStore();
+  const { provider, selectedRepoFullName, selectedRepoId, clearSelectedRepo } = useAppStore();
 
   useEffect(() => {
     loadData();
   }, []);
+
+  const setLoggedOut = () => {
+    navigate("/");
+  };
 
   const loadData = async () => {
     if (!selectedRepoFullName && !selectedRepoId) {
@@ -32,7 +36,6 @@ function CommitListPage() {
       if (provider === "github") {
         repoResponse = await getRepoDetail(selectedRepoFullName!, "");
       } else {
-        // For GitLab, use the numeric ID
         repoResponse = await getRepoDetail("", String(selectedRepoId));
       }
 
@@ -40,8 +43,8 @@ function CommitListPage() {
         setRepoDetail(repoResponse.data);
       } else {
         if (repoResponse.code === "UNAUTHORIZED" || repoResponse.code === "NOT_LOGGED_IN") {
-          clearTokens();
-          navigate("/");
+          await apiLogout();
+          setLoggedOut();
         } else {
           setError(repoResponse.error || "Failed to load repository");
         }
@@ -62,8 +65,8 @@ function CommitListPage() {
         setCommits(commitsResponse.data);
       } else {
         if (commitsResponse.code === "UNAUTHORIZED" || commitsResponse.code === "NOT_LOGGED_IN") {
-          clearTokens();
-          navigate("/");
+          await apiLogout();
+          setLoggedOut();
         } else {
           setError(commitsResponse.error || "Failed to load commits");
         }

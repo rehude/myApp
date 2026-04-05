@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getCommitDetail } from "../api/tauri";
+import { getCommitDetail, logout as apiLogout } from "../api/tauri";
 import { useAppStore } from "../store/useAppStore";
 import { CommitDetail } from "../types";
 
@@ -10,13 +10,17 @@ function CommitDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { provider, selectedRepoFullName, selectedRepoId, clearTokens } = useAppStore();
+  const { provider, selectedRepoFullName, selectedRepoId } = useAppStore();
 
   useEffect(() => {
     if (sha) {
       loadDetail();
     }
   }, [sha]);
+
+  const setLoggedOut = () => {
+    navigate("/");
+  };
 
   const loadDetail = async () => {
     if (!sha) return;
@@ -42,8 +46,8 @@ function CommitDetailPage() {
         setDetail(response.data);
       } else {
         if (response.code === "UNAUTHORIZED" || response.code === "NOT_LOGGED_IN") {
-          clearTokens();
-          navigate("/");
+          await apiLogout();
+          setLoggedOut();
         } else {
           setError(response.error || "Failed to load commit");
         }

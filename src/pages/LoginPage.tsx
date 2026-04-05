@@ -1,101 +1,215 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { setProvider, setGithubToken, setGitlabToken, setGitlabUrl } from "../api/tauri";
+import { saveAccount, setCurrentAccount, getAccounts } from "../api/tauri";
 import { useAppStore, Provider } from "../store/useAppStore";
 
 function LoginPage() {
-  const [provider, setProviderState] = useState<Provider>("github");
-  const [gitlabUrl, setGitlabUrlState] = useState("https://gitlab.com");
-  const [token, setTokenInput] = useState("");
-  const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { setProvider: setStoreProvider, setGithubToken: setStoreGithubToken, setGitlabToken: setStoreGitlabToken, setGitlabUrl: setStoreGitlabUrl } = useAppStore();
+  const { provider, githubAccounts, gitlabAccounts, setAccounts, addAccount, setProvider, setLoggedIn } = useAppStore();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token.trim()) {
+  const [loginMode, setLoginMode] = useState<"select" | "new">("select");
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [newProvider, setNewProvider] = useState<Provider>(provider);
+  const [newToken, setNewToken] = useState("");
+  const [newLabel, setNewLabel] = useState("");
+  const [newGitlabUrl, setNewGitlabUrl] = useState("https://gitlab.com");
+  const [rememberAccount, setRememberAccount] = useState(true);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const currentAccounts = newProvider === "github" ? githubAccounts : gitlabAccounts;
+
+  const handleSelectExisting = async () => {
+    if (!selectedAccountId) {
+      setError("Please select an account");
+      return;
+    }
+
+    const res = await setCurrentAccount(selectedAccountId);
+    if (res.success) {
+      // Refresh accounts list
+      const github = await getAccounts("github");
+      const gitlab = await getAccounts("gitlab");
+      setAccounts(github, gitlab);
+      setLoggedIn(true);
+      setProvider(newProvider);
+      navigate("/repos");
+    } else {
+      setError(res.error || "Failed to select account");
+    }
+  };
+
+  const handleAddNew = async () => {
+    if (!newToken.trim()) {
       setError("Please enter a token");
       return;
     }
 
-    // Set provider first
-    const providerResponse = await setProvider(provider);
-    if (!providerResponse.success) {
-      setError(providerResponse.error || "Failed to set provider");
-      return;
-    }
+    setSaving(true);
+    setError("");
 
-    // For GitLab, set the URL first
-    if (provider === "gitlab") {
-      const urlResponse = await setGitlabUrl(gitlabUrl);
-      if (!urlResponse.success) {
-        setError(urlResponse.error || "Failed to set GitLab URL");
-        return;
-      }
-      setStoreGitlabUrl(gitlabUrl);
-    }
+    const label = newLabel.trim() || (newProvider === "github" ? `GitHub Account ${githubAccounts.length + 1}` : `GitLab Account ${gitlabAccounts.length + 1}`);
+    const gitlabUrl = newProvider === "gitlab" ? newGitlabUrl : null;
 
-    // Set token based on provider
-    const tokenResponse = provider === "github"
-      ? await setGithubToken(token.trim())
-      : await setGitlabToken(token.trim());
+    const res = await saveAccount(newProvider, newToken.trim(), gitlabUrl, label);
 
-    if (tokenResponse.success) {
-      setStoreProvider(provider);
-      if (provider === "github") {
-        setStoreGithubToken(token.trim());
-      } else {
-        setStoreGitlabToken(token.trim());
-      }
+    if (res.success && res.data) {
+      addAccount(res.data);
+      // Refresh accounts list
+      const github = await getAccounts("github");
+      const gitlab = await getAccounts("gitlab");
+      setAccounts(github, gitlab);
+      setLoggedIn(true);
+      setProvider(newProvider);
       navigate("/repos");
     } else {
-      setError(tokenResponse.error || "Failed to set token");
+      setError(res.error || "Failed to save account");
     }
+
+    setSaving(false);
+  };
+
+  const handleProviderChange = (p: Provider) => {
+    setNewProvider(p);
+    setLoginMode("select");
+    setSelectedAccountId(null);
   };
 
   return (
     <div className="login-container">
       <div className="login-card">
         <h1>Git Repo Viewer</h1>
-        <p className="subtitle">Enter your credentials to continue</p>
-        <form onSubmit={handleSubmit}>
-          <div className="provider-select">
-            <label>Provider</label>
-            <select
-              value={provider}
-              onChange={(e) => setProviderState(e.target.value as Provider)}
-              className="select-input"
-            >
-              <option value="github">GitHub</option>
-              <option value="gitlab">GitLab</option>
-            </select>
-          </div>
+        <p className="subtitle">Sign in to continue</p>
 
-          {provider === "gitlab" && (
-            <div className="provider-select">
-              <label>GitLab URL</label>
+        {/* Provider Selector */}
+        <div className="provider-select">
+          <label>Provider</label>
+          <select
+            value={newProvider}
+            onChange={(e) => handleProviderChange(e.target.value as Provider)}
+            className="select-input"
+          >
+            <option value="github">GitHub</option>
+            <option value="gitlab">GitLab</option>
+          </select>
+        </div>
+
+        {/* Login Mode Toggle */}
+        <div className="login-mode-toggle">
+          <button
+            className={`toggle-btn ${loginMode === "select" ? "active" : ""}`}
+            onClick={() => setLoginMode("select")}
+          >
+            Use Existing Account
+          </button>
+          <button
+            className={`toggle-btn ${loginMode === "new" ? "active" : ""}`}
+            onClick={() => setLoginMode("new")}
+          >
+            Add New Account
+          </button>
+        </div>
+
+        {/* Existing Accounts */}
+        {loginMode === "select" && (
+          <div className="account-select-section">
+            {currentAccounts.length > 0 ? (
+              <div className="account-list">
+                {currentAccounts.map((account) => (
+                  <div
+                    key={account.id}
+                    className={`account-option ${selectedAccountId === account.id ? "selected" : ""}`}
+                    onClick={() => setSelectedAccountId(account.id)}
+                  >
+                    <input
+                      type="radio"
+                      name="account"
+                      checked={selectedAccountId === account.id}
+                      onChange={() => setSelectedAccountId(account.id)}
+                    />
+                    <div className="account-info">
+                      <span className="account-label">{account.label}</span>
+                      {account.gitlab_url && (
+                        <span className="account-url">{account.gitlab_url}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="no-accounts">No saved {newProvider} accounts</p>
+            )}
+            {selectedAccountId && (
+              <button onClick={handleSelectExisting} className="btn-primary">
+                Sign In
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* New Account Form */}
+        {loginMode === "new" && (
+          <div className="new-account-section">
+            {newProvider === "gitlab" && (
+              <div className="form-group">
+                <label>GitLab URL</label>
+                <input
+                  type="text"
+                  value={newGitlabUrl}
+                  onChange={(e) => setNewGitlabUrl(e.target.value)}
+                  placeholder="https://gitlab.com"
+                  className="token-input"
+                />
+              </div>
+            )}
+
+            <div className="form-group">
+              <label>Account Label (optional)</label>
               <input
                 type="text"
-                value={gitlabUrl}
-                onChange={(e) => setGitlabUrlState(e.target.value)}
-                placeholder="https://gitlab.com"
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                placeholder={newProvider === "github" ? "e.g., Work Account" : "e.g., Company GitLab"}
                 className="token-input"
               />
             </div>
-          )}
 
-          <input
-            type="password"
-            value={token}
-            onChange={(e) => setTokenInput(e.target.value)}
-            placeholder={provider === "github" ? "ghp_xxxxxxxxxxxx" : "glpat-xxxxxxxxxxxx"}
-            className="token-input"
-          />
-          {error && <p className="error">{error}</p>}
-          <button type="submit" className="btn-primary">Login</button>
-        </form>
+            <div className="form-group">
+              <label>Personal Access Token</label>
+              <input
+                type="password"
+                value={newToken}
+                onChange={(e) => setNewToken(e.target.value)}
+                placeholder={newProvider === "github" ? "ghp_xxxxxxxxxxxx" : "glpat-xxxxxxxxxxxx"}
+                className="token-input"
+              />
+            </div>
+
+            <div className="form-group checkbox-group">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={rememberAccount}
+                  onChange={(e) => setRememberAccount(e.target.checked)}
+                />
+                <span>Remember this account</span>
+              </label>
+            </div>
+
+            <button
+              onClick={handleAddNew}
+              className="btn-primary"
+              disabled={saving}
+            >
+              {saving ? "Signing In..." : "Sign In"}
+            </button>
+          </div>
+        )}
+
+        {error && <p className="error">{error}</p>}
+
         <p className="hint">
-          {provider === "github"
+          {newProvider === "github"
             ? "Create a token at GitHub → Settings → Developer settings → Personal access tokens"
             : "Create a token at GitLab → Settings → Access Tokens (needs read_api scope)"}
         </p>

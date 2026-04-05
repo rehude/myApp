@@ -104,8 +104,7 @@ impl GitProvider for GitLabProvider {
     async fn get_repos(&self) -> Result<Vec<Repo>, AppError> {
         let client = build_client();
         let url = format!("{}/api/v4/projects?membership=true&per_page=100", self.api_base);
-        eprintln!("GitLab API URL: {}", url);
-
+        
         let response = client
             .get(&url)
             .header("PRIVATE-TOKEN", &self.token)
@@ -113,8 +112,7 @@ impl GitProvider for GitLabProvider {
             .send()
             .await?;
 
-        eprintln!("GitLab response status: {}", response.status());
-
+        
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {
             return Err(AppError::Unauthorized);
         }
@@ -142,9 +140,7 @@ impl GitProvider for GitLabProvider {
             percent_encode(repo.as_bytes(), NON_ALPHANUMERIC).to_string()
         };
         let url = format!("{}/api/v4/projects/{}", self.api_base, project_id);
-        eprintln!("GitLab get_repo_detail - project_id used: {}", project_id);
-        eprintln!("GitLab API URL: {}", url);
-
+                
         let response = client
             .get(&url)
             .header("PRIVATE-TOKEN", &self.token)
@@ -152,8 +148,7 @@ impl GitProvider for GitLabProvider {
             .send()
             .await?;
 
-        eprintln!("GitLab response status: {}", response.status());
-
+        
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {
             return Err(AppError::Unauthorized);
         }
@@ -178,8 +173,7 @@ impl GitProvider for GitLabProvider {
             percent_encode(repo.as_bytes(), NON_ALPHANUMERIC).to_string()
         };
         let url = format!("{}/api/v4/projects/{}/repository/commits?per_page=100", self.api_base, project_id);
-        eprintln!("GitLab API URL: {}", url);
-
+        
         let response = client
             .get(&url)
             .header("PRIVATE-TOKEN", &self.token)
@@ -187,8 +181,7 @@ impl GitProvider for GitLabProvider {
             .send()
             .await?;
 
-        eprintln!("GitLab response status: {}", response.status());
-
+        
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {
             return Err(AppError::Unauthorized);
         }
@@ -229,7 +222,6 @@ impl GitProvider for GitLabProvider {
 
         // First get commit info
         let commit_url = format!("{}/api/v4/projects/{}/repository/commits/{}", self.api_base, project_id, sha);
-        eprintln!("GitLab API URL: {}", commit_url);
 
         let commit_response = client
             .get(&commit_url)
@@ -238,8 +230,7 @@ impl GitProvider for GitLabProvider {
             .send()
             .await?;
 
-        eprintln!("GitLab commit response status: {}", commit_response.status());
-
+        
         if commit_response.status() == reqwest::StatusCode::UNAUTHORIZED {
             return Err(AppError::Unauthorized);
         }
@@ -253,8 +244,7 @@ impl GitProvider for GitLabProvider {
 
         // Then get diffs using the separate diff endpoint
         let diff_url = format!("{}/api/v4/projects/{}/repository/commits/{}/diff", self.api_base, project_id, sha);
-        eprintln!("GitLab diff URL: {}", diff_url);
-
+        
         let diff_response = client
             .get(&diff_url)
             .header("PRIVATE-TOKEN", &self.token)
@@ -262,12 +252,10 @@ impl GitProvider for GitLabProvider {
             .send()
             .await?;
 
-        eprintln!("GitLab diff response status: {}", diff_response.status());
-
+        
         let files: Option<Vec<CommitFile>> = if diff_response.status().is_success() {
             let diffs: Vec<GitLabDiff> = diff_response.json().await.unwrap_or_default();
-            eprintln!("GitLab diffs count: {}", diffs.len());
-            if diffs.is_empty() {
+                        if diffs.is_empty() {
                 None
             } else {
                 Some(diffs.into_iter().map(|d| {

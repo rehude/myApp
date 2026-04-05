@@ -7,11 +7,13 @@ use crate::services::auth_service;
 pub async fn get_repos(state: &AppState) -> Result<Vec<Repo>, AppError> {
     let provider = auth_service::get_provider(state);
     let token = auth_service::get_token(state, provider).ok_or(AppError::NotLoggedIn)?;
+    let gitlab_url = auth_service::get_gitlab_url(state);
 
     let provider_impl: Box<dyn GitProvider> = match provider {
-        crate::state::Provider::GitHub => Box::new(GitHubProvider::new(token)),
+        crate::state::Provider::GitHub => {
+            Box::new(GitHubProvider::new(token))
+        }
         crate::state::Provider::GitLab => {
-            let gitlab_url = auth_service::get_gitlab_url(state);
             Box::new(GitLabProvider::new(token, gitlab_url))
         }
     };

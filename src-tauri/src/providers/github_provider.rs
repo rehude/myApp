@@ -55,8 +55,7 @@ impl GitProvider for GitHubProvider {
             (owner, repo)
         };
         let url = format!("{}/repos/{}/{}", GITHUB_API_BASE, owner_str, repo_str);
-        eprintln!("GitHub API URL: {}", url);
-
+        
         let response = client
             .get(&url)
             .bearer_auth(&self.token)
@@ -65,8 +64,7 @@ impl GitProvider for GitHubProvider {
             .send()
             .await?;
 
-        eprintln!("GitHub response status: {}", response.status());
-
+        
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {
             return Err(AppError::Unauthorized);
         }
@@ -93,8 +91,7 @@ impl GitProvider for GitHubProvider {
             (owner, repo)
         };
         let url = format!("{}/repos/{}/{}/commits?per_page=100", GITHUB_API_BASE, owner_str, repo_str);
-        eprintln!("GitHub API URL: {}", url);
-
+        
         let response = client
             .get(&url)
             .bearer_auth(&self.token)
@@ -103,8 +100,7 @@ impl GitProvider for GitHubProvider {
             .send()
             .await?;
 
-        eprintln!("GitHub response status: {}", response.status());
-
+        
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {
             return Err(AppError::Unauthorized);
         }
@@ -131,8 +127,7 @@ impl GitProvider for GitHubProvider {
             (owner, repo)
         };
         let url = format!("{}/repos/{}/{}/commits/{}", GITHUB_API_BASE, owner_str, repo_str, sha);
-        eprintln!("GitHub API URL: {}", url);
-
+        
         let response = client
             .get(&url)
             .bearer_auth(&self.token)
@@ -141,8 +136,7 @@ impl GitProvider for GitHubProvider {
             .send()
             .await?;
 
-        eprintln!("GitHub response status: {}", response.status());
-
+        
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {
             return Err(AppError::Unauthorized);
         }
